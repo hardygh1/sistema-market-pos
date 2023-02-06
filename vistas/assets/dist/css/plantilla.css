@@ -1,0 +1,14 @@
+.navbar-light .navbar-nav .active>.nav-link, .navbar-light .navbar-nav .nav-link.active, .navbar-light .navbar-nav .nav-link.show, .navbar-light .navbar-nav .show>.nav-link {
+    color: rgb(255 255 255 / 90%) !important;
+    background: #dc3545 !important;
+    font-weight: bold !important;
+}
+
+[class*=sidebar-dark-] {
+    background-color: #dc3545 !important;
+}
+
+.sidebar-dark-primary .nav-sidebar>.nav-item>.nav-link.active, .sidebar-light-primary .nav-sidebar>.nav-item>.nav-link.active {
+    background-color: #282927 !important;
+    color: #fff !important;
+}
