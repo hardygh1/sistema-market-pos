@@ -19,7 +19,8 @@
 <!-- Main content -->
 <div class="content">
     <div class="container-fluid">
-        <!-- Creamos una fila -->
+
+        <!-- Row Tarjetas Informativas -->
         <div class="row">
             <div class="col-lg-2">
                 <!-- small box -->
@@ -116,13 +117,47 @@
                 </div>
             </div>
            
+        </div><!-- Row Tarjetas Informativas -->
+
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">Ventas del Mes:</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse" >
+                                <i class="fas fa-minus"></i>                                
+                            </button>
+                            <button type="button" class="btn btn-tool" data-card-widget="remove" >
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart">
+                            <canvas id="barChart" style="min-height: 205px; height: 300px; max-height: 350px; width:100%;">
+
+                            </canvas>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
         </div>
+
+
+
+
     </div><!-- /.container-fluid -->
 </div>
 <!-- /.content -->
 
 <script>
     $(document).ready(function(){
+
+        /*SOLICITUD AJAX TARJETAS INFORMATIVAS*/
+
         $.ajax({
             url: 'ajax/dashboard.ajax.php',
             method: 'POST',
@@ -135,6 +170,122 @@
                 $("#totalGanancias").html('S./' + respuesta[0]['ganancias'].replace(/\d(?=(\{3})+\.)/g, "$%,"));
                 $("#totalProductosMinStock").html(respuesta[0]['productosPocoStock']);
                 $("#totalVentasHoy").html('S./' + respuesta[0]['ventasHoy'].replace(/\d(?=(\{3})+\.)/g, "$%,"));
+
+            }
+            
+       });
+
+       /*ACTUALIZACION CONCURRENTE DE TARJETAS INFORMATIVAS*/
+       setInterval(()=>{
+        $.ajax({
+            url: 'ajax/dashboard.ajax.php',
+            method: 'POST',
+            dataType: 'json',
+            success:function(respuesta){
+                console.log("respuesta",respuesta);
+                $("#totalProductos").html(respuesta[0]['totalProductos']);
+                $("#totalCompras").html('S./' + respuesta[0]['totalCompras'].replace(/\d(?=(\{3})+\.)/g, "$%,"));
+                $("#totalVentas").html('S./' + respuesta[0]['totalVentas'].replace(/\d(?=(\{3})+\.)/g, "$%,"));
+                $("#totalGanancias").html('S./' + respuesta[0]['ganancias'].replace(/\d(?=(\{3})+\.)/g, "$%,"));
+                $("#totalProductosMinStock").html(respuesta[0]['productosPocoStock']);
+                $("#totalVentasHoy").html('S./' + respuesta[0]['ventasHoy'].replace(/\d(?=(\{3})+\.)/g, "$%,"));
+
+            }    
+       });
+       },10000);
+
+
+       $.ajax({
+            url: 'ajax/dashboard.ajax.php',
+            method: 'POST',
+            data:{
+                'accion' : 1 //Parametro para Obtener Ventas del Mes
+            },
+            dataType: 'json',
+            success:function(respuesta){
+                console.log("respuesta",respuesta);
+
+                var fecha_venta = [];
+                var total_venta = [];
+                var total_ventas_mes = 0;
+
+                for (let i = 0; i < respuesta.length; i++) {
+
+                    fecha_venta.push(respuesta[i]['fecha_venta']);
+                    total_venta.push(respuesta[i]['total_venta']);
+                    total_ventas_mes = parseFloat(total_ventas_mes) + parseFloat(respuesta[i]['total_venta']);
+                }
+
+                $('.card-title').html('Ventas del Mes: S./ ' + total_ventas_mes.toString().replace(/\d(?=(\{3})+\.)/g, "$%,"));
+
+                //Grafico de Barras
+                var barChartCanvas = $("#barChart").get(0).getContext('2d');
+
+                var areaChartData = {
+                    labels: fecha_venta,
+                    datasets:[
+                        {
+                            label: 'Ventas del Mes',
+                            backgroundColor: 'rgba(60,141,188,0.9)',
+                            data: total_venta
+                        }
+                    ]
+                }
+                var barChartData = $.extend(true, {}, areaChartData);
+
+                var temp0 = areaChartData.datasets[0];
+
+                barChartData.datasets[0] = temp0;
+
+                //Personalizacion de las Barras
+
+                var barChartOptions = {
+                  maintainAspectRatio: false,
+                  responsive: true,
+                  events: false,
+                  legend: {
+                    display: true
+                  },
+                  animation: {
+                    duration: 500,
+                    easing: "easeOutQuart",
+                    onComplete: function(){
+                      var ctx = this.chart.ctx;
+                      ctx.font = Chart.helpers.fontString(Chart.defaults.global.defaultFontFamily, 'normal', Chart.defaults.global.defaultFontFamily);
+                      ctx.textAlign = 'center';
+                      ctx.textBaseline = 'bottom';
+                      
+                      this.data.datasets.forEach(function(dataset){
+                          for(var i = 0 ; i < dataset.data.length; i++){
+                            var model = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._model,
+                                        scale_max = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._yScale.maxHeight;
+                            ctx.fillStyle = '#444';
+                            
+                            var y_pos = model.y - 5;
+
+                            // Make sure data value does not get overFlow and hidden
+                            // When the bar's value is too clase to max value of scale
+                            // Note: The y value is reverse, it counts from top down
+
+                            if((scale_max - model.y) / scale_max >= 0.93){
+                              y_pos = model.y + 20;
+                            }
+                            
+                            ctx.fillText(dataset.data[i], model.x, y_pos);
+                          }
+                      });
+                    }
+                  }
+                }
+
+                //Visualizar el Grafico
+
+                new Chart(barChartCanvas, {
+                    type: 'bar',
+                    data: barChartData,
+                    options: barChartOptions
+                } )
+
 
             }
             
