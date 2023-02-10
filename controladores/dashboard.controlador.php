@@ -14,4 +14,18 @@ class DashboardControlador{
 
         return $ventasMesActual;
     }
+
+    static public function ctrProductosMasVendidos(){
+
+        $productosMasVendidos = DashboardModelo::mldProductosMasVendidos();
+
+        return $productosMasVendidos;
+    }
+
+    static public function ctrProductosPocoStock(){
+
+        $productosPocoStock = DashboardModelo::mldProductosPocoStock();
+
+        return $productosPocoStock;
+    }
 }
